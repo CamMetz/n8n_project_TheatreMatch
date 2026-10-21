@@ -1,0 +1,13 @@
+const events = $input.all().map(item => item.json);
+
+const telegramMessage = $('Telegram Trigger').first().json.message;
+const searchQuery = telegramMessage?.text || '';
+const telegramId = telegramMessage?.from?.id?.toString() || '';
+
+return [{
+  json: {
+    searchQuery,
+    telegramId,
+    events
+  }
+}];
