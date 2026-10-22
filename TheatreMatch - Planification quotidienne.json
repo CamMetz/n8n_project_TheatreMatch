@@ -1,0 +1,78 @@
+{
+  "name": "TheatreMatch - Planification quotidienne",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "54683265-e9eb-4286-898c-f10d9930ddff",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "H66ZXeXHaQFOtpqf",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/H66ZXeXHaQFOtpqf",
+          "cachedResultName": "TheatreMatch - Alertes automatiques"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "11862544-bac2-4ac1-aaa4-abd556c3b033",
+      "name": "Call 'TheatreMatch - Alertes automatiques'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Call 'TheatreMatch - Alertes automatiques'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "10136701-bd0f-40e1-be2b-9bdb4a55d7f5",
+  "meta": {
+    "instanceId": "efffb83d8906f92a403b7cf048dadccbe1e4f41c086937ea9ceec6475b3d9e83"
+  },
+  "nodeGroups": [],
+  "id": "kCy2Z6RvRXjjhJF9",
+  "tags": []
+}

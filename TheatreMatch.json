@@ -1,0 +1,1173 @@
+{
+  "name": "TheatreMatch",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        352,
+        -224
+      ],
+      "id": "fd1016f8-ec3f-4b44-9aaa-4dfa84b4af71",
+      "name": "Telegram Trigger",
+      "webhookId": "4d5d5c37-a2fc-49e3-966b-35fdd229e73c",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "43edeeb8-68a3-4dac-8ce7-0c9d133bfba4"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "45c92ca5-e863-484f-bed6-01cfc0dffcc3",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/preferences",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "366f6029-8b83-4883-8835-ce03ada22268",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/recherche",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "aa90ab2d-2f92-4190-b5aa-fc1dd4b48126",
+                    "leftValue": "={{ $json.message.text || \"\" }}",
+                    "rightValue": "Genre\\s*:[\\s\\S]*Maximum\\s*Price\\s*:[\\s\\S]*Preferred\\s*Area\\s*:[\\s\\S]*Preferred\\s*Period\\s*:",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        -272
+      ],
+      "id": "b4c3e810-a6bc-47e2-b1e4-80b7843da63c",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Welcome to TheatreMatch!  \nI help you find theatre shows in Paris based on your preferences.  \nHere's how to get started: \n• /preferences — save or update your usual preferences \n• /recherche — start a one-time search \n• Send me a message describing what you're looking for, without changing your saved preferences.  \nExample: “I'm looking for a comedy under €20 in the 8th arrondissement on Saturday evening.”",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        848,
+        -768
+      ],
+      "id": "e66b5c74-a2cc-43eb-8bfe-67efea6aec3b",
+      "name": "Send a text message2",
+      "webhookId": "aa45e66f-41ee-40e1-b56b-318903210570",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "Set your TheatreMatch preferences\n\nCopy and complete this template, then send it back:\n\nGenre: Comedy\nMaximum price: 20\nPreferred area: 8th arrondissement\nPreferred period: Saturday, Sunday\n\nAvailable options\n\n- Genre: Comedy, Tragedy, Classic, Contemporary, Absurd Theatre, Musical, Drama, Any\n- Maximum price: Your budget in euros\n- Preferred area: A Paris arrondissement or Any\n- Preferred period: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday. You can select multiple days, separated by commas, or choose Any.\n\nYour preferences will be saved for your daily recommendations!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        -640
+      ],
+      "id": "71184f39-979f-4131-9b5e-e7e05d864295",
+      "name": "Send a text message3",
+      "webhookId": "5e85b85f-062e-4933-a267-89ec43103488",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "=Find a Theatre Show  \nTell me what you're looking for! \nInclude as many details as you like: \n• Type of show or genre \n• Date or time \n• Preferred area in Paris \n• Maximum ticket price  \nExample: “I'm looking for contemporary theatre in the 11th arrondissement this Friday, under €25.”  \n\nThis is a one-time search. Your saved preferences for daily recommendations won't be changed.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        -432
+      ],
+      "id": "5dc8e549-4b97-43bf-91bf-5e1024f3e4c4",
+      "name": "Send a text message4",
+      "webhookId": "dc0004e6-f53c-48cd-ad64-f0e87dd3774c",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Sorry, I didn't understand that command. \n\nTo get started with TheatreMatch, please send /start.  \n\nHere are the available commands: \n• /start — Get started \n• /preferences — Save your usual theatre preferences \n• /recherche — Search for a show  \n\nHappy theatre hunting!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        128
+      ],
+      "id": "3bdc7ab9-7db4-4199-8878-69b41833b248",
+      "name": "Send a text message5",
+      "webhookId": "1ada060f-bccd-4b6f-b001-6e76b2d251b0",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bf2960cb-65cd-4314-8ea2-28ddb608dff6",
+              "name": "preferenceRequest",
+              "value": "={{ $('Telegram Trigger').first().json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        864,
+        -576
+      ],
+      "id": "313decfb-c3ac-4c47-8be1-e7d00e1a9c21",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "D3cIocnuHvKR5OE1",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Users",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/D3cIocnuHvKR5OE1"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramId",
+              "keyValue": "={{ $('Telegram Trigger').first().json.message.from.id.toString() }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "awaitingPreferences": true,
+            "telegramId": "={{ $('Telegram Trigger').first().json.message.from.id.toString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telegramId",
+              "displayName": "telegramId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "genrePreference",
+              "displayName": "genrePreference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "maxPrice",
+              "displayName": "maxPrice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "preferredPeriod",
+              "displayName": "preferredPeriod",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "preferredArea",
+              "displayName": "preferredArea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "awaitingPreferences",
+              "displayName": "awaitingPreferences",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        -608
+      ],
+      "id": "da751e28-1033-4793-a6ba-e39c6b495474",
+      "name": "Upsert row(s)2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "294f40a6-4b78-422e-b803-b4d1f959d679",
+              "name": "genrePreference",
+              "value": "={{ $json.message.text.match(/Genre\\s*:\\s*([^\\n\\r]+)/i)?.[1]?.trim() || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "8f4616a3-c504-4019-9009-9f0d6673df95",
+              "name": "=maxPrice",
+              "value": "={{   (() => {     const text = $json.message.text || \"\";     const match = text.match(/Maximum\\s*Price\\s*:\\s*([0-9]+(?:[.,][0-9]{1,2})?)/i);     return match ? Number(match[1].replace(\",\", \".\")) : null;   })() }}",
+              "type": "number"
+            },
+            {
+              "id": "9d033cbf-ee0c-40c4-bed9-8c7534d231f9",
+              "name": "preferredArea",
+              "value": "={{   (() => {     const text = $json.message.text || \"\";     const match = text.match(/Preferred\\s*Area\\s*:\\s*([^\\r\\n]+)/i);     return match ? match[1].trim() : \"\";   })() }}",
+              "type": "string"
+            },
+            {
+              "id": "030d2586-c964-422d-ba52-f43a590440bb",
+              "name": "preferredPeriod",
+              "value": "={{   (() => {     const text = $json.message.text || \"\";     const match = text.match(/Preferred\\s*Period\\s*:\\s*([^\\r\\n]+)/i);     return match ? match[1].trim() : \"\";   })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1712,
+        -288
+      ],
+      "id": "7dc68ae3-2f77-410c-817c-cf85fb7859c8",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e37ece86-a0cd-4c45-86c3-cc653a875832",
+              "leftValue": "={{ $json.genrePreference }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "9d8f1960-536a-42f5-b528-5b3fe6e05357",
+              "leftValue": "={{ $json.maxPrice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "a5bbd9fe-addd-46b2-bbc0-0b1bacc168c9",
+              "leftValue": "={{ $json.preferredArea }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "b1870f77-11df-43f6-b1ad-da9a2447fc7a",
+              "leftValue": "={{ $json.preferredPeriod }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1904,
+        -272
+      ],
+      "id": "9a70255b-e863-4f2a-83c2-b6a014f351f9",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "D3cIocnuHvKR5OE1",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Users",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/D3cIocnuHvKR5OE1"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramId",
+              "keyValue": "={{ $('Telegram Trigger').item.json.message.from.id.toString() }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "awaitingPreferences": false,
+            "telegramId": "={{ $('Telegram Trigger').item.json.message.from.id.toString() }}",
+            "genrePreference": "={{ $json.genrePreference }}",
+            "maxPrice": "={{ $json.maxPrice }}",
+            "preferredPeriod": "={{ $json.preferredPeriod }}",
+            "preferredArea": "={{ $json.preferredArea }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telegramId",
+              "displayName": "telegramId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "genrePreference",
+              "displayName": "genrePreference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "maxPrice",
+              "displayName": "maxPrice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "preferredPeriod",
+              "displayName": "preferredPeriod",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "preferredArea",
+              "displayName": "preferredArea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "awaitingPreferences",
+              "displayName": "awaitingPreferences",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2096,
+        -288
+      ],
+      "id": "736b47fe-8ec3-4410-98ec-846677af8d79",
+      "name": "Upsert row(s)3"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=Your preferences have been saved!  \nHere are your TheatreMatch preferences:  \nGenre: {{ $json.genrePreference }} \nMaximum price: €{{ $json.maxPrice }} \nPreferred area: {{ $json.preferredArea }} \nPreferred days: {{ $json.preferredPeriod }} \n\nYou'll receive daily recommendations based on these preferences.  \nTo update them, send /preferences again. \nHappy theatre hunting!",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2304,
+        -464
+      ],
+      "id": "46455287-21f2-439e-b3ec-9537f31c5fe9",
+      "name": "Send a text message6",
+      "webhookId": "ca937a76-777c-44d0-b055-19945144bce1",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "D3cIocnuHvKR5OE1",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Users",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/D3cIocnuHvKR5OE1"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramId",
+              "keyValue": "={{ $('Telegram Trigger').first().json.message.from.id.toString() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        -144
+      ],
+      "id": "b60c94ec-b2d4-4939-a9ea-e81dbaf5069d",
+      "name": "Get row(s)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "91564227-6bdc-40d1-bb0f-848b0e1872b4",
+              "leftValue": "={{ $json.awaitingPreferences ?? false }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1088,
+        -224
+      ],
+      "id": "fb860553-b53f-42c0-98ad-01d0ae7771c5",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1360,
+        -352
+      ],
+      "id": "3b40288b-5928-4533-b428-1ec063f255f8",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "eDfycOQN8OkrxrDX",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Events",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/eDfycOQN8OkrxrDX"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        -16
+      ],
+      "id": "2547a1aa-e821-4df3-8a71-bdc3809390e1",
+      "name": "Get row(s)1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const events = $input.all().map(item => item.json);\n\nconst telegramMessage = $('Telegram Trigger').first().json.message;\nconst searchQuery = telegramMessage?.text || '';\nconst telegramId = telegramMessage?.from?.id?.toString() || '';\n\nreturn [{\n  json: {\n    searchQuery,\n    telegramId,\n    events\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        -16
+      ],
+      "id": "acdb020d-d4ad-40d9-899d-491f1403d040",
+      "name": "Filtrer les spectacles"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "zr5h3hsZ7cZQRGJE",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_SearchState",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/zr5h3hsZ7cZQRGJE"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramId",
+              "keyValue": "={{ $json.message.from.id.toString() }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "awaitingSearch": true,
+            "telegramId": "={{ $json.message.from.id.toString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telegramId",
+              "displayName": "telegramId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "awaitingSearch",
+              "displayName": "awaitingSearch",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        -368
+      ],
+      "id": "5d5e8b6e-88fb-4587-8ba6-b1b9a2bf5f68",
+      "name": "Upsert row(s)"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "zr5h3hsZ7cZQRGJE",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_SearchState",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/zr5h3hsZ7cZQRGJE"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramId",
+              "keyValue": "={{ $json.message.from.id.toString() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        64
+      ],
+      "id": "0eca9aa0-e572-49d4-8a46-3a0d7553a758",
+      "name": "Get row(s)2",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "feeac6be-d2e0-479a-965a-4d13eedeac61",
+              "leftValue": "={{ $json.awaitingSearch }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1024,
+        64
+      ],
+      "id": "d93ee96d-fe5f-4121-9bb2-71448ca11dca",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an assistant specialized in recommending theatre shows in Paris.\n\nUser's request:\n{{ $json.searchQuery }}\n\nAvailable theatre shows:\n{{ JSON.stringify($json.events) }}\n\nYour task is to select the theatre shows that best match the user's request, taking into account the criteria they mention, such as theatre genre, dates, location, budget, and any other preferences.\n\nRules to follow:\n- Use only the information provided in the available data.\n- The available theatre shows are provided as a JSON array. Examine every event in the array before selecting the best matches.\n- If the list is empty, explain that no shows are currently available to search.\n- Never invent a show, date, price, venue, or booking link.\n- If no shows clearly match the request, say so honestly.\n- Return a maximum of 10 shows, ranked from most relevant to least relevant.\n- For each selected show, include the title, genre (if available), date or dates, venue, price, and booking link when available.\n- If any information is missing, state that it is not provided rather than making it up.\n- Respond in English, using a friendly, clear, and helpful tone.\n- Present the results as a numbered list for easy reading.\n- Never modify the user's saved preferences. This is a one-time search only.\n\nDate matching rules:\n- Resolve relative dates such as \"this Saturday\" using the current date in the Europe/Paris time zone.\n- A show matches a requested date if that date falls on at least one actual performance date.\n- If only `dateStart` and `dateEnd` are available, consider the show a possible match when the requested date falls between those dates, inclusive.\n- However, do not assume a performance takes place every day between `dateStart` and `dateEnd` if `occurrences` provides a more specific schedule. Use `occurrences` first when it contains performance dates.\n- If the available dates or schedule are insufficient to confirm a match, clearly say that the date needs to be verified. Never invent a performance date.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1712,
+        -16
+      ],
+      "id": "654e881e-0761-4360-a691-0d106b1962fd",
+      "name": "Basic LLM Chain1",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $json.text || $json.response || $json.output || \"Sorry, I couldn't find any matching shows. Please try a different search.\" }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2080,
+        -16
+      ],
+      "id": "94053dc2-6559-4bac-87e2-aabbfad6de27",
+      "name": "Send a text message1",
+      "webhookId": "33df6715-d3fa-4bc4-870c-8dad54388162",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "zr5h3hsZ7cZQRGJE",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_SearchState",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/zr5h3hsZ7cZQRGJE"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramId",
+              "keyValue": "={{ $('Telegram Trigger').first().json.message.from.id.toString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2304,
+        -16
+      ],
+      "id": "524c5bc5-ec1e-4e81-bd4f-f2fc5fdb8b1f",
+      "name": "Delete row(s)"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1728,
+        208
+      ],
+      "id": "29b57f78-4e95-4184-8d4f-94bd86be0b78",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZJ528p4dha9jOxLY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Get row(s)2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Upsert row(s)2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert row(s)2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message3": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Upsert row(s)3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert row(s)3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message4": {
+      "main": [
+        []
+      ]
+    },
+    "Get row(s)1": {
+      "main": [
+        [
+          {
+            "node": "Filtrer les spectacles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert row(s)": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrer les spectacles": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Delete row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "21d7807d-a030-43bb-ade5-e5e9c590f586",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "efffb83d8906f92a403b7cf048dadccbe1e4f41c086937ea9ceec6475b3d9e83"
+  },
+  "nodeGroups": [],
+  "id": "6EZCKWGonMMW93jl",
+  "tags": []
+}

@@ -1,0 +1,755 @@
+{
+  "name": "TheatreMatch — Import des spectacles",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/que-faire-a-paris-/records",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            },
+            {
+              "name": "select",
+              "value": "id,title_event,date_start,date_end,occurrences,date_description,qfap_tags,price_type,price_detail,audience,locations,access_link,description"
+            },
+            {
+              "name": "where",
+              "value": "qfap_tags like \"%Théâtre%\""
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "offset",
+                    "value": "={{ $pageCount * 100 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.results || $response.body.results.length < 100 }}"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        304,
+        32
+      ],
+      "id": "d0a850bf-c77a-413f-9bfe-d0805a4fa202",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst response = $input.first().json;\nconst events = response.results ?? [];\n\nreturn events\n  .filter(event =>\n    (event.qfap_tags ?? \"\")\n      .toLowerCase()\n      .includes(\"théâtre\")\n  )\n  .map(event => {\n    const location = event.locations?.[0] ?? {};\n    const descriptionText = (event.description || \"\")\n      .replace(/<[^>]*>/g, \" \")\n      .replace(/&nbsp;/g, \" \")\n      .trim();\n    const title =\n      event.title_event ||\n      descriptionText.match(/^(.*?)\\s+est une énigme/i)?.[1] ||\n      null;\n    const occurrences = event.occurrences ?? null;\n    const bookingLink = event.access_link ?? null;\n    const hasExactSessions = Boolean(occurrences);\n    const hasTitleAndSessions = Boolean(title && occurrences);\n\n    return {\n      json: {\n        sourceEventId: event.id ?? null,\n        title,\n        titleMissing: !title,\n        description: event.description ?? null,\n        dateStart: event.date_start ?? null,\n        dateEnd: event.date_end ?? null,\n        occurrences,\n        dateDescription: event.date_description ?? null,\n        category: event.qfap_tags ?? \"\",\n        priceType: event.price_type ?? \"Non renseigné\",\n        priceDetail: event.price_detail ?? null,\n        audience: event.audience ?? \"Non renseigné\",\n        venue: location.address_name ?? \"Lieu non renseigné\",\n        address: location.address_street ?? \"\",\n        postcode: location.address_zipCode ?? \"\",\n        bookingLink,\n        hasUsefulDates: Boolean(occurrences || event.date_description),\n        hasBookingLink: Boolean(bookingLink),\n        hasExactSessions,\n        hasTitleAndSessions\n      }\n    };\n  });\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        32
+      ],
+      "id": "63b60585-f16e-44a1-937f-a31c2da9bf6d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "069a5bb2-7c82-4054-9fa0-8a5bbc12c5bd",
+              "leftValue": "={{ $json.description }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        32
+      ],
+      "id": "2ea56228-587c-434a-8c5c-a1861022792d",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "eDfycOQN8OkrxrDX",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Events",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/eDfycOQN8OkrxrDX"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sourceEventId",
+              "keyValue": "={{ $json.sourceEventId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sourceEventId": "={{ $json.sourceEventId }}",
+            "title": "={{ $json.title }}",
+            "description": "={{ $json.description }}",
+            "category": "={{ $json.category }}",
+            "dateStart": "={{ $json.dateStart }}",
+            "dateEnd": "={{ $json.dateEnd }}",
+            "occurences": "={{ $json.occurrences }}",
+            "priceType": "={{ $json.priceType }}",
+            "priceDetail": "={{ $json.priceDetail }}",
+            "venue": "={{ $json.venue }}",
+            "bookingLink": "={{ $json.bookingLink }}",
+            "genre": "Indéterminé",
+            "adress": "={{ $json.address }}",
+            "postcode": "={{ $json.postcode }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sourceEventId",
+              "displayName": "sourceEventId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "genre",
+              "displayName": "genre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "dateStart",
+              "displayName": "dateStart",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "dateEnd",
+              "displayName": "dateEnd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "occurences",
+              "displayName": "occurences",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priceType",
+              "displayName": "priceType",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priceDetail",
+              "displayName": "priceDetail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "venue",
+              "displayName": "venue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "bookingLink",
+              "displayName": "bookingLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "adress",
+              "displayName": "adress",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "postcode",
+              "displayName": "postcode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1664,
+        112
+      ],
+      "id": "c7c3a2d5-b294-4e27-90f4-3e5e59bfeaee",
+      "name": "Upsert row(s)1"
+    },
+    {
+      "parameters": {
+        "text": "={{ JSON.stringify($json.events.map((event, index) => ({\n  index,\n  title: event.title ?? \"Non renseigné\",\n  description: event.description ?? \"Non renseignée\",\n  tags: event.category ?? \"\"\n}))) }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"results\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"index\": {\n            \"type\": \"integer\"\n          },\n          \"genre\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"Comédie\",\n              \"Tragédie\",\n              \"Classique\",\n              \"Contemporain\",\n              \"Théâtre absurde\",\n              \"Comédie musicale\",\n              \"Drame\",\n              \"Indéterminé\"\n            ]\n          },\n          \"justification\": {\n            \"type\": \"string\"\n          }\n        },\n        \"required\": [\"index\", \"genre\", \"justification\"]\n      }\n    }\n  },\n  \"required\": [\"results\"]\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        1840,
+        -96
+      ],
+      "id": "e0ba7496-b531-4e8d-8b5b-067e5e89c17c",
+      "name": "Information Extractor",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "eDfycOQN8OkrxrDX",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Events",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/eDfycOQN8OkrxrDX"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sourceEventId",
+              "keyValue": "={{ $json.sourceEventId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sourceEventId": "={{ $json.sourceEventId }}",
+            "title": "={{ $json.title }}",
+            "description": "={{ $json.description }}",
+            "category": "={{ $json.category }}",
+            "dateStart": "={{ $json.dateStart }}",
+            "dateEnd": "={{ $json.dateEnd }}",
+            "occurences": "={{ $json.occurrences }}",
+            "priceType": "={{ $json.priceType }}",
+            "priceDetail": "={{ $json.priceDetail }}",
+            "venue": "={{ $json.venue }}",
+            "bookingLink": "={{ $json.bookingLink }}",
+            "genre": "={{ $json.genre }}",
+            "adress": "={{ $json.address }}",
+            "postcode": "={{ $json.postcode }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sourceEventId",
+              "displayName": "sourceEventId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "genre",
+              "displayName": "genre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "dateStart",
+              "displayName": "dateStart",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "dateEnd",
+              "displayName": "dateEnd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "occurences",
+              "displayName": "occurences",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priceType",
+              "displayName": "priceType",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priceDetail",
+              "displayName": "priceDetail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "venue",
+              "displayName": "venue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "bookingLink",
+              "displayName": "bookingLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "adress",
+              "displayName": "adress",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "postcode",
+              "displayName": "postcode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2336,
+        -64
+      ],
+      "id": "46e226b5-77af-4c18-b60a-d81d0eaf1d88",
+      "name": "Upsert row(s)"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        64,
+        16
+      ],
+      "id": "e373abaf-758b-4dd2-8b28-c8f24071c497",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1840,
+        96
+      ],
+      "id": "fd9b8b47-290c-4b3f-a0cb-91892d89bc8b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZJ528p4dha9jOxLY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "01ddc669-6463-4bab-b542-d94d027ffc01",
+              "name": "genre",
+              "value": "Indéterminé",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1200,
+        -32
+      ],
+      "id": "9f33ee93-eb8b-4d5a-aed5-f2998f0f33e0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(item => item.json);\nconst batches = [];\n\nfor (let i = 0; i < items.length; i += 10) {\n  batches.push({\n    json: {\n      events: items.slice(i, i + 10)\n    }\n  });\n}\n\nreturn batches;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        -96
+      ],
+      "id": "b0437912-20fb-477b-85c0-7b536438b741",
+      "name": "Regrouper par 10"
+    },
+    {
+      "parameters": {
+        "jsCode": "const batches = $('Regrouper par 10').all()\n  .map(item => item.json.events || []);\n\nconst outputs = $input.all().map(item =>\n  item.json.output?.results ?? item.json.results ?? []\n);\n\nreturn batches.flatMap((events, batchIndex) => {\n  const results = outputs[batchIndex] || [];\n\n  return events.map((event, index) => {\n    const result = results.find(\n      r => Number(r.index) === index\n    );\n\n    return {\n      json: {\n        ...event,\n        genre: result?.genre || event.genre || 'Indéterminé',\n        genreJustification: result?.justification || ''\n      }\n    };\n  });\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        -96
+      ],
+      "id": "087b52bb-144f-4933-828b-54f50f2507a9",
+      "name": "Réassocier les genres"
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "eDfycOQN8OkrxrDX",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Events",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/eDfycOQN8OkrxrDX"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sourceEventId",
+              "keyValue": "={{ $json.sourceEventId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        -48
+      ],
+      "id": "34281f6a-f93c-4d81-99fd-04180021826a",
+      "name": "If row does not exist"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert row(s)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Réassocier les genres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If row does not exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Regrouper par 10": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réassocier les genres": {
+      "main": [
+        [
+          {
+            "node": "Upsert row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If row does not exist": {
+      "main": [
+        [
+          {
+            "node": "Regrouper par 10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a36eb7c8-329b-433c-b2c9-c42285e90f7d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "efffb83d8906f92a403b7cf048dadccbe1e4f41c086937ea9ceec6475b3d9e83"
+  },
+  "nodeGroups": [],
+  "id": "prBYc79tgX1W3xYg",
+  "tags": []
+}

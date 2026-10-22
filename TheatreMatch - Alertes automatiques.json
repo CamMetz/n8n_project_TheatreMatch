@@ -1,0 +1,422 @@
+{
+  "name": "TheatreMatch - Alertes automatiques",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "eDfycOQN8OkrxrDX",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Events",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/eDfycOQN8OkrxrDX"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "6e2327e0-160a-4989-ad66-c20cecdc8f90",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "D3cIocnuHvKR5OE1",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Users",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/D3cIocnuHvKR5OE1"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        112
+      ],
+      "id": "ab96356e-c234-4ded-80ed-41314c344b10",
+      "name": "Get row(s)1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        672,
+        -16
+      ],
+      "id": "cb789fba-1945-416a-abe0-f7e2c4693d42",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const data = item.json;\n\n  if (data.telegramId !== undefined) {\n    return {\n      json: {\n        ...data,\n        recordType: \"user\"\n      }\n    };\n  }\n\n  return {\n    json: {\n      ...data,\n      recordType: \"event\"\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -16
+      ],
+      "id": "79cd5b9e-c82e-4e42-a2eb-dcd949e02365",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(item => item.json);\n\nconst users = items.filter(item =>\n  item.recordType === \"user\" &&\n  item.awaitingPreferences !== true\n);\nconst events = items.filter(item => item.recordType === \"event\");\n\nconst parisToday = new Intl.DateTimeFormat(\"en-CA\", {\n  timeZone: \"Europe/Paris\",\n  year: \"numeric\",\n  month: \"2-digit\",\n  day: \"2-digit\"\n}).format(new Date());\n\nconst dayNames = {\n  monday: 1, tuesday: 2, wednesday: 3, thursday: 4,\n  friday: 5, saturday: 6, sunday: 0,\n  lundi: 1, mardi: 2, mercredi: 3, jeudi: 4,\n  vendredi: 5, samedi: 6, dimanche: 0\n};\n\nfunction normalize(value) {\n  return String(value ?? \"\")\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .toLowerCase()\n    .trim();\n}\n\nfunction parseDays(value) {\n  const text = normalize(value);\n\n  if (!text || /\\b(any|tous|toutes|peu importe)\\b/.test(text)) {\n    return null;\n  }\n\n  const found = new Set();\n\n  for (const [name, number] of Object.entries(dayNames)) {\n    if (new RegExp(`\\\\b${name}\\\\b`, \"i\").test(text)) {\n      found.add(number);\n    }\n  }\n\n  return found.size ? found : null;\n}\n\nfunction getOccurrences(event) {\n  const raw = event.occurrences;\n\n  if (typeof raw === \"string\" && raw.trim()) {\n    return raw.split(\";\").map(part => {\n      const start = part.split(\"_\")[0];\n      const date = new Date(start);\n\n      return Number.isNaN(date.getTime()) ? null : date;\n    }).filter(Boolean);\n  }\n\n  const start = new Date(event.dateStart);\n\n  return Number.isNaN(start.getTime()) ? [] : [start];\n}\n\nfunction priceMatches(user, event) {\n  const budget = Number(user.maxPrice);\n\n  if (!Number.isFinite(budget) || budget <= 0) return true;\n\n  const text = normalize(\n    `${event.priceType || \"\"} ${event.priceDetail || \"\"}`\n      .replace(/<[^>]*>/g, \" \")\n  );\n\n  if (/gratuit|free|entree libre/.test(text)) return true;\n\n  // Détecte les fourchettes comme « de 8 à 20 euros »\n  const range = text.match(\n    /(?:de\\s*)?(\\d+(?:[.,]\\d{1,2})?)\\s*(?:€|euros?)?\\s*(?:a|à|[-–])\\s*(\\d+(?:[.,]\\d{1,2})?)\\s*(?:€|euros?)?/i\n  );\n\n  if (range) {\n    const maximum = Number(range[2].replace(\",\", \".\"));\n    return maximum <= budget;\n  }\n\n  const match = text.match(/(\\d+(?:[.,]\\d{1,2})?)/);\n\n  // Si le tarif est inconnu, ne pas exclure arbitrairement le spectacle.\n  if (!match) return true;\n\n  return Number(match[1].replace(\",\", \".\")) <= budget;\n}\n\nfunction genreMatches(user, event) {\n  const wanted = normalize(user.genrePreference);\n  const actual = normalize(event.genre || event.category);\n\n  if (!wanted || /\\b(any|peu importe)\\b/.test(wanted)) return true;\n  if (!actual) return false;\n\n  const aliases = {\n    comedy: [\"comedy\", \"comedie\", \"humour\", \"humoristique\"],\n    comedie: [\"comedy\", \"comedie\", \"humour\", \"humoristique\"],\n    tragedy: [\"tragedy\", \"tragedie\"],\n    tragedie: [\"tragedy\", \"tragedie\"],\n    musical: [\"musical\", \"comedie musicale\", \"comedy musical\"],\n    contemporary: [\"contemporary\", \"contemporain\", \"contemporaine\"],\n    classic: [\"classic\", \"classique\"],\n    drama: [\"drama\", \"drame\"],\n    \"absurd theatre\": [\n      \"absurd theatre\",\n      \"theatre de l'absurde\",\n      \"absurde\"\n    ]\n  };\n\n  const accepted = aliases[wanted] || [wanted];\n\n  return accepted.some(term =>\n    actual.includes(term) || term.includes(actual)\n  );\n}\n\nfunction areaMatches(user, event) {\n  const wanted = normalize(user.preferredArea);\n\n  if (!wanted || /\\b(any|peu importe)\\b/.test(wanted)) return true;\n\n  const location = normalize(\n    `${event.address || \"\"} ${event.postcode || \"\"} ${event.venue || \"\"}`\n  );\n\n  const match = wanted.match(/\\b(\\d{1,2})(?:er|eme|e|st|nd|rd|th)?\\b/);\n\n  if (match) {\n    const arrondissement = Number(match[1]);\n\n    if (arrondissement < 1 || arrondissement > 20) return false;\n\n    const postalCode = String(75000 + arrondissement);\n\n    return location.includes(postalCode) ||\n      new RegExp(\n        `\\\\b${arrondissement}\\\\s*(?:e|er|eme|arrondissement)\\\\b`\n      ).test(location);\n  }\n\n  return location.includes(wanted);\n}\n\nfunction matches(user, event) {\n  const occurrences = getOccurrences(event);\n\n  const futureOccurrences = occurrences.filter(date =>\n    date.toLocaleDateString(\"en-CA\", {\n      timeZone: \"Europe/Paris\"\n    }) >= parisToday\n  );\n\n  if (!futureOccurrences.length) return false;\n  if (!genreMatches(user, event)) return false;\n  if (!priceMatches(user, event)) return false;\n  if (!areaMatches(user, event)) return false;\n\n  const days = parseDays(user.preferredPeriod);\n\n  if (days && !futureOccurrences.some(date => days.has(date.getDay()))) {\n    return false;\n  }\n\n  return true;\n}\n\nconst results = [];\n\nfor (const user of users) {\n  for (const event of events.filter(event => matches(user, event))) {\n    const futureDates = getOccurrences(event)\n      .filter(date =>\n        date.toLocaleDateString(\"en-CA\", {\n          timeZone: \"Europe/Paris\"\n        }) >= parisToday\n      )\n      .sort((a, b) => a - b);\n\n    results.push({\n      json: {\n        telegramId: user.telegramId,\n        genrePreference: user.genrePreference,\n        maxPrice: user.maxPrice,\n        preferredPeriod: user.preferredPeriod,\n        preferredArea: user.preferredArea,\n        title: event.title,\n        description: event.description,\n        genre: event.genre,\n        dateStart: futureDates[0]?.toISOString() || event.dateStart,\n        dateEnd: event.dateEnd,\n        occurrences: event.occurrences,\n        priceType: event.priceType,\n        priceDetail: event.priceDetail,\n        venue: event.venue,\n        address: event.address,\n        postcode: event.postcode,\n        bookingLink: event.bookingLink,\n        sourceEventId: event.sourceEventId\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -16
+      ],
+      "id": "5fab5656-d2dd-4602-ade2-e4ff9f968af7",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Gg0zTznrIyYcCHXS",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Notifications",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/Gg0zTznrIyYcCHXS"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        96
+      ],
+      "id": "9ba3a59b-95f5-420a-9086-254c1ca8306f",
+      "name": "Get row(s)2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1504,
+        -16
+      ],
+      "id": "013c2a4a-e4aa-4755-b832-6a1139f83c3d",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.telegramId }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2192,
+        -16
+      ],
+      "id": "6078b2e4-718a-46d4-bd4a-2c0f888bd596",
+      "name": "Send a text message",
+      "webhookId": "d78cea17-399a-4f68-9898-c8e2c0ef4cf9",
+      "credentials": {
+        "telegramApi": {
+          "id": "BW9Y1G6vIcTLt0VO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "Gg0zTznrIyYcCHXS",
+          "mode": "list",
+          "cachedResultName": "TheatreMatch_Notifications",
+          "cachedResultUrl": "/projects/x2EctBPRCPutk9C1/datatables/Gg0zTznrIyYcCHXS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telegramId": "={{ $json.telegramId }}",
+            "sourceEventId": "={{ $json.sourceEventId }}",
+            "status": "sent",
+            "sentAt": "={{ $json.sentAt }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telegramId",
+              "displayName": "telegramId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "sourceEventId",
+              "displayName": "sourceEventId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "sentAt",
+              "displayName": "sentAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2624,
+        -16
+      ],
+      "id": "b498049a-5882-4686-b317-405349990dab",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all().map(item => item.json);\n\n// Les spectacles candidats possèdent un titre et un identifiant Telegram.\n// Les anciennes notifications possèdent un statut.\nconst candidates = items.filter(item =>\n  item.telegramId !== undefined &&\n  item.telegramId !== null &&\n  item.sourceEventId !== undefined &&\n  item.sourceEventId !== null &&\n  item.status === undefined\n);\n\nconst sent = items.filter(item => item.status === \"sent\");\n\nconst alreadySent = new Set(\n  sent\n    .filter(item =>\n      item.telegramId != null &&\n      item.sourceEventId != null\n    )\n    .map(item =>\n      `${String(item.telegramId)}::${String(item.sourceEventId)}`\n    )\n);\n\nreturn candidates\n  .filter(item =>\n    !alreadySent.has(\n      `${String(item.telegramId)}::${String(item.sourceEventId)}`\n    )\n  )\n  .map(item => ({ json: item }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -16
+      ],
+      "id": "25cf0d33-cc4f-45c0-bb38-6d35044fb7bd",
+      "name": "Code filtrer les doublons"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        16
+      ],
+      "id": "48dc4340-3466-4951-9676-dcaa421bcdc9",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $('Regrouper les spectacles').all();\n\nreturn items.flatMap(item => {\n  const data = item.json;\n\n  return (data.notifications || []).map(event => ({\n    json: {\n      telegramId: data.telegramId,\n      sourceEventId: event.sourceEventId,\n      sentAt: new Date().toISOString(),\n      status: \"sent\"\n    }\n  }));\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2416,
+        -16
+      ],
+      "id": "f4c3e558-7bfd-481c-a124-db3c0753fc68",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(item => item.json);\n\n// Regrouper les spectacles par utilisateur Telegram\nconst groups = {};\n\nfor (const event of items) {\n  const id = String(event.telegramId);\n\n  if (!groups[id]) {\n    groups[id] = [];\n  }\n\n  groups[id].push(event);\n}\n\nreturn Object.entries(groups).map(([telegramId, events]) => {\n  const lines = events.map((event, index) => {\n    const clean = value =>\n      String(value || \"\")\n        .replace(/<[^>]*>/g, \" \")\n        .replace(/&nbsp;/g, \" \")\n        .replace(/\\s+/g, \" \")\n        .trim();\n\n    return [\n      `${index + 1}. ${clean(event.title) || \"Titre à confirmer\"}`,\n      `Genre : ${clean(event.genre) || \"Non précisé\"}`,\n      `Lieu : ${clean(event.venue) || \"À confirmer\"}`,\n      `Date : ${clean(event.dateStart) || \"À confirmer\"}`,\n      `Prix : ${clean(event.priceDetail || event.priceType) || \"À vérifier\"}`,\n      event.bookingLink\n        ? `Réservation : ${event.bookingLink}`\n        : \"Lien de réservation indisponible\"\n    ].join(\"\\n\");\n  });\n\n  return {\n    json: {\n      telegramId,\n      message:\n        `TheatreMatch — ${events.length} spectacle(s) for you !\\n\\n` +\n        lines.join(\"\\n\\n\"),\n      notifications: events\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        -16
+      ],
+      "id": "b8c565d1-7916-4bc7-bf4e-f9086f6644a6",
+      "name": "Regrouper les spectacles"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)2": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code filtrer les doublons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code filtrer les doublons": {
+      "main": [
+        [
+          {
+            "node": "Regrouper les spectacles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Regrouper les spectacles": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6eef1c14-4ad9-4592-b4c1-42449ebdac09",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "efffb83d8906f92a403b7cf048dadccbe1e4f41c086937ea9ceec6475b3d9e83"
+  },
+  "nodeGroups": [],
+  "id": "H66ZXeXHaQFOtpqf",
+  "tags": []
+}
