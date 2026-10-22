@@ -1,0 +1,19 @@
+return $input.all().map(item => {
+  const data = item.json;
+
+  if (data.telegramId !== undefined) {
+    return {
+      json: {
+        ...data,
+        recordType: "user"
+      }
+    };
+  }
+
+  return {
+    json: {
+      ...data,
+      recordType: "event"
+    }
+  };
+});
